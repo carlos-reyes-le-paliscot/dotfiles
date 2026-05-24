@@ -11,7 +11,7 @@ curl -fsSL https://raw.githubusercontent.com/<you>/dotfiles/main/install.sh | ba
 What runs:
 
 1. Homebrew (also installs Xcode CLT)
-2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, Setapp, 1Password, Dia, VS Code) + fonts
+2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
 3. `gh auth login` (browser device flow) + `gh-copilot` extension
 4. VS Code extensions from `vscode-extensions.txt`
 5. `scripts/setup-npmrc.sh` (no-op until you configure a private registry pattern)
