@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Bootstrap a fresh macOS machine.
 # Usage (on a new Mac):
-#   curl -fsSL https://raw.githubusercontent.com/<you>/dotfiles/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh | bash
 
 set -euo pipefail
-cd "$(dirname "${BASH_SOURCE[0]}")"
 
-# 1. Homebrew (also installs Xcode Command Line Tools)
+REPO_URL="${DOTFILES_REPO:-https://github.com/carlos-reyes-le-paliscot/dotfiles.git}"
+CLONE_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
+
+# 1. Homebrew (also installs Xcode Command Line Tools, which provides git)
 if ! command -v brew >/dev/null 2>&1; then
   echo "→ Installing Homebrew…"
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -17,23 +19,36 @@ elif [ -x /usr/local/bin/brew ]; then
   eval "$(/usr/local/bin/brew shellenv)"
 fi
 
-# 2. CLIs and apps from Brewfile
+# 2. If we were piped via curl|bash, BASH_SOURCE is empty and Brewfile isn't local.
+#    Clone the repo and re-exec from inside it.
+SCRIPT_PATH="${BASH_SOURCE[0]:-}"
+if [ -z "$SCRIPT_PATH" ] || [ ! -f "$(dirname "$SCRIPT_PATH")/Brewfile" ]; then
+  if [ ! -d "$CLONE_DIR/.git" ]; then
+    echo "→ Cloning $REPO_URL to $CLONE_DIR…"
+    git clone "$REPO_URL" "$CLONE_DIR"
+  fi
+  echo "→ Re-running from clone at $CLONE_DIR…"
+  exec bash "$CLONE_DIR/install.sh" "$@"
+fi
+cd "$(dirname "$SCRIPT_PATH")"
+
+# 3. CLIs and apps from Brewfile
 echo "→ Installing Brewfile bundle…"
 brew bundle --file=Brewfile
 
-# 3. GitHub auth (browser device flow — no tokens in this repo)
+# 4. GitHub auth (browser device flow — no tokens in this repo)
 if ! gh auth status >/dev/null 2>&1; then
   echo "→ Signing in to GitHub…"
   gh auth login --web -h github.com
 fi
 
-# 4. gh extensions (Copilot CLI)
+# 5. gh extensions (Copilot CLI)
 if ! gh extension list 2>/dev/null | grep -q gh-copilot; then
   echo "→ Installing gh-copilot extension…"
   gh extension install github/gh-copilot
 fi
 
-# 5. VS Code extensions
+# 6. VS Code extensions
 if command -v code >/dev/null 2>&1; then
   echo "→ Installing VS Code extensions…"
   xargs -n1 code --install-extension --force < vscode-extensions.txt
@@ -41,7 +56,7 @@ else
   echo "⚠ VS Code 'code' CLI not on PATH. Open VS Code once, run 'Shell Command: Install code command in PATH', then re-run this script."
 fi
 
-# 6. Private npm registry auth + global packages
+# 7. Private npm registry auth + global packages
 ./scripts/setup-npmrc.sh
 if command -v npm >/dev/null 2>&1; then
   echo "→ Installing global npm packages…"
@@ -54,6 +69,6 @@ cat <<'EOF'
 
 ✓ Bootstrap complete.
 
-Next, finish the manual steps in POST-INSTALL.md (Setapp + TablePlus,
-1Password sign-in, Raycast import, VS Code Settings Sync, …).
+Next, finish the manual steps in POST-INSTALL.md (1Password sign-in,
+Raycast import, VS Code Settings Sync, …).
 EOF
