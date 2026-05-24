@@ -24,10 +24,10 @@ fi
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 if [ -z "$SCRIPT_PATH" ] || [ ! -f "$(dirname "$SCRIPT_PATH")/Brewfile" ]; then
   if [ ! -d "$CLONE_DIR/.git" ]; then
-    echo "→ Cloning $REPO_URL to $CLONE_DIR…"
+    echo "→ Cloning $REPO_URL to ${CLONE_DIR}…"
     git clone "$REPO_URL" "$CLONE_DIR"
   fi
-  echo "→ Re-running from clone at $CLONE_DIR…"
+  echo "→ Re-running from clone at ${CLONE_DIR}…"
   exec bash "$CLONE_DIR/install.sh" "$@"
 fi
 cd "$(dirname "$SCRIPT_PATH")"
