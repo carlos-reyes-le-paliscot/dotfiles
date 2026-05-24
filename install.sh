@@ -5,13 +5,20 @@
 
 set -euo pipefail
 
+# When run via `curl | bash`, stdin is the pipe — but Homebrew, gh auth, etc.
+# need to prompt the user (sudo password, "press RETURN", etc.). Wire stdin to
+# the terminal so interactive prompts work.
+if [ ! -t 0 ] && [ -r /dev/tty ]; then
+  exec </dev/tty
+fi
+
 REPO_URL="${DOTFILES_REPO:-https://github.com/carlos-reyes-le-paliscot/dotfiles.git}"
 CLONE_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
 # 1. Homebrew (also installs Xcode Command Line Tools, which provides git)
 if ! command -v brew >/dev/null 2>&1; then
   echo "→ Installing Homebrew…"
-  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 if [ -x /opt/homebrew/bin/brew ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
