@@ -1,16 +1,9 @@
 #!/usr/bin/env bash
 # Bootstrap a fresh macOS machine.
 # Usage (on a new Mac):
-#   curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh | bash
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh)"
 
 set -euo pipefail
-
-# When run via `curl | bash`, stdin is the pipe — but Homebrew, gh auth, etc.
-# need to prompt the user (sudo password, "press RETURN", etc.). Wire stdin to
-# the terminal so interactive prompts work.
-if [ ! -t 0 ] && [ -r /dev/tty ]; then
-  exec </dev/tty
-fi
 
 REPO_URL="${DOTFILES_REPO:-https://github.com/carlos-reyes-le-paliscot/dotfiles.git}"
 CLONE_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"

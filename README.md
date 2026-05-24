@@ -5,7 +5,7 @@ Personal macOS bootstrap. Fresh machine → ready to code in ~20 minutes, mostly
 ## Use it
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/<you>/dotfiles/main/install.sh | bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh)"
 ```
 
 What runs:
@@ -33,4 +33,4 @@ git commit -am "refresh snapshot"
 ## Security notes
 
 - No tokens in this repo. `~/.npmrc` and `~/.ssh/` are generated locally only.
-- `install.sh` runs via `curl | bash` — keep this repo public so you can audit it, and protect your GitHub account with 2FA + hardware key.
+- `install.sh` runs via remote shell exec — keep this repo public so you can audit it, and protect your GitHub account with 2FA + hardware key.
