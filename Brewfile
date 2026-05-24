@@ -12,7 +12,7 @@ brew "node"
 
 # --- Apps ---
 cask "raycast"
-cask "dia"                     # The Browser Company's Dia — verify cask name if install fails
+cask "thebrowsercompany-dia"   # The Browser Company's Dia
 cask "1password"
 cask "1password-cli"
 cask "visual-studio-code"
