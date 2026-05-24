@@ -34,7 +34,7 @@ cd "$(dirname "$SCRIPT_PATH")"
 
 # 3. CLIs and apps from Brewfile
 echo "→ Installing Brewfile bundle…"
-brew bundle --file=Brewfile
+brew bundle --file=Brewfile --verbose
 
 # 4. GitHub auth (browser device flow — no tokens in this repo)
 if ! gh auth status >/dev/null 2>&1; then
