@@ -14,10 +14,23 @@ if ! command -v brew >/dev/null 2>&1; then
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 fi
 if [ -x /opt/homebrew/bin/brew ]; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+  BREW_BIN=/opt/homebrew/bin/brew
 elif [ -x /usr/local/bin/brew ]; then
-  eval "$(/usr/local/bin/brew shellenv)"
+  BREW_BIN=/usr/local/bin/brew
+else
+  echo "✗ brew not found after install" >&2
+  exit 1
 fi
+eval "$("$BREW_BIN" shellenv)"
+
+# Persist brew on PATH for future shells.
+BREW_SHELLENV_LINE="eval \"\$($BREW_BIN shellenv)\""
+for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
+  if ! grep -qsF "$BREW_SHELLENV_LINE" "$profile"; then
+    echo "$BREW_SHELLENV_LINE" >> "$profile"
+    echo "→ Added brew shellenv to ${profile/#$HOME/~}"
+  fi
+done
 
 # 2. If we were piped via curl|bash, BASH_SOURCE is empty and Brewfile isn't local.
 #    Clone the repo and re-exec from inside it.
