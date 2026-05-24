@@ -1,0 +1,8 @@
+GitHub.copilot
+GitHub.copilot-chat
+anthropic.claude-code
+dbaeumer.vscode-eslint
+esbenp.prettier-vscode
+Prisma.prisma
+bradlc.vscode-tailwindcss
+ms-azuretools.vscode-docker
