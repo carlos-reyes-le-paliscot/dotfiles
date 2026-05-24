@@ -19,6 +19,17 @@ What runs:
 
 Then finish the manual steps in [POST-INSTALL.md](./POST-INSTALL.md).
 
+## Undo it
+
+From inside the clone (`~/.dotfiles` by default):
+
+```sh
+./uninstall.sh          # prompts before doing anything
+./uninstall.sh --yes    # skip the prompt
+```
+
+Removes every Brewfile entry (casks via `--zap`, wiping app prefs), npm globals, VS Code extensions, the `gh-copilot` extension, and the brew shellenv lines from `~/.zprofile` / `~/.bash_profile`. Leaves Homebrew, Xcode CLT, GitHub auth, and `~/.npmrc` alone — those have system-wide effects beyond this bootstrap; instructions to remove each are printed at the end.
+
 ## Refresh the snapshot
 
 After installing or removing apps:
