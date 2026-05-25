@@ -33,12 +33,17 @@ for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
 done
 
 # 2. If we were piped via curl|bash, BASH_SOURCE is empty and Brewfile isn't local.
-#    Clone the repo and re-exec from inside it.
+#    Clone (or pull) the repo and re-exec from inside it so we always run the
+#    latest version of every step, not whatever was on disk from a prior run.
 SCRIPT_PATH="${BASH_SOURCE[0]:-}"
 if [ -z "$SCRIPT_PATH" ] || [ ! -f "$(dirname "$SCRIPT_PATH")/Brewfile" ]; then
   if [ ! -d "$CLONE_DIR/.git" ]; then
     echo "→ Cloning $REPO_URL to ${CLONE_DIR}…"
     git clone "$REPO_URL" "$CLONE_DIR"
+  else
+    echo "→ Updating clone at ${CLONE_DIR}…"
+    git -C "$CLONE_DIR" fetch --quiet origin main
+    git -C "$CLONE_DIR" reset --hard --quiet origin/main
   fi
   echo "→ Re-running from clone at ${CLONE_DIR}…"
   exec bash "$CLONE_DIR/install.sh" "$@"
