@@ -15,6 +15,7 @@ cask "thebrowsercompany-dia"   # The Browser Company's Dia
 cask "1password"
 cask "1password-cli"
 cask "visual-studio-code"
+cask "claude-code"
 
 # Previously via Setapp — now standalone (separate licenses):
 cask "displaperture"

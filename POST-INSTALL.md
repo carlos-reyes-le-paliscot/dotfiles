@@ -35,5 +35,5 @@ defaults write com.apple.dock autohide-delay -float 0
 killall Dock
 ```
 
-## 7. Private npm packages
-If you skipped this in the bootstrap: edit `scripts/setup-npmrc.sh`, uncomment one of the three patterns, and re-run it.
+## 7. Private npm packages (only if you need them)
+The bootstrap doesn't install anything from npm anymore — language runtimes are handled per-repo via `mise`. If a project you work on pulls from a private npm registry, edit `scripts/setup-npmrc.sh`, uncomment one of the three patterns, and run it once: `./scripts/setup-npmrc.sh`.

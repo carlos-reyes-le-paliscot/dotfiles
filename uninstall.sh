@@ -18,10 +18,11 @@ fi
 if [ "$CONFIRM" = "1" ]; then
   cat <<'EOF'
 ⚠ This will remove everything install.sh added:
-  - global npm packages from npm-globals.txt
   - VS Code extensions from vscode-extensions.txt
   - gh-copilot extension
   - every formula and cask in Brewfile (casks via --zap, so app prefs go too)
+  - leftover config dirs under $(brew --prefix)/etc that brew itself never deletes
+  - autoremoved dependency leftovers (e.g. openssl@3, ca-certificates configs)
   - "eval brew shellenv" lines from ~/.zprofile and ~/.bash_profile
   - the clone at ~/.dotfiles (or $DOTFILES_DIR if set)
 
@@ -46,25 +47,19 @@ if ! command -v brew >/dev/null 2>&1; then
   fi
 fi
 
-# 1. npm globals
-if command -v npm >/dev/null 2>&1 && [ -f npm-globals.txt ]; then
-  echo "→ Removing global npm packages…"
-  xargs -n1 npm uninstall -g < npm-globals.txt || true
-fi
-
-# 2. VS Code extensions
+# 1. VS Code extensions
 if command -v code >/dev/null 2>&1 && [ -f vscode-extensions.txt ]; then
   echo "→ Removing VS Code extensions…"
   xargs -n1 code --uninstall-extension < vscode-extensions.txt || true
 fi
 
-# 3. gh extensions
+# 2. gh extensions
 if command -v gh >/dev/null 2>&1; then
   echo "→ Removing gh-copilot extension…"
   gh extension remove github/gh-copilot 2>/dev/null || true
 fi
 
-# 4. Brewfile contents — casks first (some depend on formulae), then formulae.
+# 3. Brewfile contents — casks first (some depend on formulae), then formulae.
 if command -v brew >/dev/null 2>&1 && [ -f Brewfile ]; then
   echo "→ Uninstalling casks from Brewfile…"
   grep -E '^[[:space:]]*cask[[:space:]]+"' Brewfile \
@@ -81,9 +76,28 @@ if command -v brew >/dev/null 2>&1 && [ -f Brewfile ]; then
         echo "  · $f"
         brew uninstall --ignore-dependencies "$f" 2>/dev/null || true
       done
+
+  # Sweep orphaned dependencies that brew pulled in transitively.
+  echo "→ Autoremoving orphaned dependencies…"
+  brew autoremove 2>/dev/null || true
+
+  # brew uninstall preserves /opt/homebrew/etc/<name> by design ("might contain
+  # user customizations"). For a clean teardown we don't want that — wipe any
+  # config dir whose corresponding Cellar dir is gone.
+  BREW_PREFIX="$(brew --prefix)"
+  if [ -d "$BREW_PREFIX/etc" ]; then
+    echo "→ Removing leftover config dirs under $BREW_PREFIX/etc…"
+    find "$BREW_PREFIX/etc" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read -r d; do
+      name="$(basename "$d")"
+      if [ ! -d "$BREW_PREFIX/Cellar/$name" ]; then
+        echo "  · $d"
+        rm -rf "$d"
+      fi
+    done
+  fi
 fi
 
-# 5. Strip brew shellenv lines from shell profiles.
+# 4. Strip brew shellenv lines from shell profiles.
 for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
   [ -f "$profile" ] || continue
   if grep -q 'brew shellenv' "$profile"; then
@@ -92,7 +106,7 @@ for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
   fi
 done
 
-# 6. Clone directory.
+# 5. Clone directory.
 CLONE_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 if [ -d "$CLONE_DIR" ]; then
   echo "→ Removing clone at $CLONE_DIR"

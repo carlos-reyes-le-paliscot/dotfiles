@@ -69,15 +69,6 @@ else
   echo "⚠ VS Code 'code' CLI not on PATH. Open VS Code once, run 'Shell Command: Install code command in PATH', then re-run this script."
 fi
 
-# 7. Private npm registry auth + global packages
-./scripts/setup-npmrc.sh
-if command -v npm >/dev/null 2>&1; then
-  echo "→ Installing global npm packages…"
-  xargs -n1 npm install -g < npm-globals.txt
-else
-  echo "⚠ npm not found. Install Node first (e.g. 'brew install node' or via mise) and re-run."
-fi
-
 cat <<'EOF'
 
 ✓ Bootstrap complete.

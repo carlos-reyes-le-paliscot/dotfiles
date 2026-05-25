@@ -11,11 +11,11 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot
 What runs:
 
 1. Homebrew (also installs Xcode CLT)
-2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
+2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, Claude Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
 3. `gh auth login` (browser device flow) + `gh-copilot` extension
 4. VS Code extensions from `vscode-extensions.txt`
-5. `scripts/setup-npmrc.sh` (no-op until you configure a private registry pattern)
-6. Global npm packages from `npm-globals.txt` (Claude Code, Copilot CLI)
+
+Language runtimes (Node, Python, …) are handled per-repo with `mise` — drop a `.mise.toml` in each project. `scripts/setup-npmrc.sh` is left as a manual helper if you ever need a private npm registry.
 
 Then finish the manual steps in [POST-INSTALL.md](./POST-INSTALL.md).
 
@@ -28,7 +28,7 @@ From inside the clone (`~/.dotfiles` by default):
 ./uninstall.sh --yes    # skip the prompt
 ```
 
-Removes every Brewfile entry (casks via `--zap`, wiping app prefs), npm globals, VS Code extensions, the `gh-copilot` extension, and the brew shellenv lines from `~/.zprofile` / `~/.bash_profile`. Leaves Homebrew, Xcode CLT, GitHub auth, and `~/.npmrc` alone — those have system-wide effects beyond this bootstrap; instructions to remove each are printed at the end.
+Removes every Brewfile entry (casks via `--zap`, wiping app prefs), VS Code extensions, the `gh-copilot` extension, autoremoves orphaned brew dependencies, sweeps leftover config dirs under `$(brew --prefix)/etc` (so you don't have to `rm -rf /opt/homebrew/etc/openssl@3` and friends by hand), and strips the brew shellenv lines from `~/.zprofile` / `~/.bash_profile`. Leaves Homebrew, Xcode CLT, GitHub auth, and `~/.npmrc` alone — those have system-wide effects beyond this bootstrap; instructions to remove each are printed at the end.
 
 ## Refresh the snapshot
 
@@ -37,7 +37,6 @@ After installing or removing apps:
 ```sh
 brew bundle dump --file=Brewfile --force --describe
 code --list-extensions > vscode-extensions.txt
-npm ls -g --depth=0 --json | jq -r '.dependencies | keys[]' > npm-globals.txt
 git commit -am "refresh snapshot"
 ```
 
