@@ -24,6 +24,7 @@ if [ "$CONFIRM" = "1" ]; then
   - leftover config dirs under $(brew --prefix)/etc that brew itself never deletes
   - autoremoved dependency leftovers (e.g. openssl@3, ca-certificates configs)
   - "eval brew shellenv" lines from ~/.zprofile and ~/.bash_profile
+  - functions.zsh source lines from ~/.zshrc and ~/.bashrc
   - the clone at ~/.dotfiles (or $DOTFILES_DIR if set)
 
 It will NOT:
@@ -97,12 +98,19 @@ if command -v brew >/dev/null 2>&1 && [ -f Brewfile ]; then
   fi
 fi
 
-# 4. Strip brew shellenv lines from shell profiles.
+# 4. Strip brew shellenv lines and functions.zsh source lines from shell rc files.
 for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
   [ -f "$profile" ] || continue
   if grep -q 'brew shellenv' "$profile"; then
     echo "→ Removing brew shellenv line from ${profile/#$HOME/~}"
     sed -i.bak '/brew shellenv/d' "$profile"
+  fi
+done
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  [ -f "$rc" ] || continue
+  if grep -q 'shell/functions.zsh' "$rc"; then
+    echo "→ Removing functions.zsh source line from ${rc/#$HOME/~}"
+    sed -i.bak '\#shell/functions.zsh#d' "$rc"
   fi
 done
 

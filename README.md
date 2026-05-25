@@ -14,6 +14,7 @@ What runs:
 2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, Claude Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
 3. `gh auth login` (browser device flow) + `gh-copilot` extension
 4. VS Code extensions from `vscode-extensions.txt`
+5. Sources `shell/functions.zsh` into `~/.zshrc` / `~/.bashrc` — adds `brew-purge <pkg>` (uninstall + autoremove orphans + sweep leftover config dirs in one shot)
 
 Language runtimes (Node, Python, …) are handled per-repo with `mise` — drop a `.mise.toml` in each project. `scripts/setup-npmrc.sh` is left as a manual helper if you ever need a private npm registry.
 

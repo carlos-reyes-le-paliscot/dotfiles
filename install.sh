@@ -69,6 +69,16 @@ else
   echo "⚠ VS Code 'code' CLI not on PATH. Open VS Code once, run 'Shell Command: Install code command in PATH', then re-run this script."
 fi
 
+# 7. Load shell helper functions (brew-purge, …) into interactive shells.
+FUNCTIONS_FILE="$(pwd)/shell/functions.zsh"
+SOURCE_LINE="[ -f \"$FUNCTIONS_FILE\" ] && source \"$FUNCTIONS_FILE\""
+for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
+  if ! grep -qsF "$FUNCTIONS_FILE" "$rc"; then
+    echo "$SOURCE_LINE" >> "$rc"
+    echo "→ Added shell function loader to ${rc/#$HOME/~}"
+  fi
+done
+
 cat <<'EOF'
 
 ✓ Bootstrap complete.
