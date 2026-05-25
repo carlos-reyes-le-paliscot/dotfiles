@@ -41,9 +41,16 @@ if [ -z "$SCRIPT_PATH" ] || [ ! -f "$(dirname "$SCRIPT_PATH")/Brewfile" ]; then
     echo "→ Cloning $REPO_URL to ${CLONE_DIR}…"
     git clone "$REPO_URL" "$CLONE_DIR"
   else
-    echo "→ Updating clone at ${CLONE_DIR}…"
-    git -C "$CLONE_DIR" fetch --quiet origin main
-    git -C "$CLONE_DIR" reset --hard --quiet origin/main
+    local_before=$(git -C "$CLONE_DIR" rev-parse --short HEAD)
+    echo "→ Updating clone at ${CLONE_DIR} (was $local_before)…"
+    git -C "$CLONE_DIR" fetch --force --prune origin main
+    git -C "$CLONE_DIR" reset --hard origin/main
+    local_after=$(git -C "$CLONE_DIR" rev-parse --short HEAD)
+    if [ "$local_before" = "$local_after" ]; then
+      echo "→ Clone was already at latest ($local_after)."
+    else
+      echo "→ Clone updated: $local_before → $local_after."
+    fi
   fi
   echo "→ Re-running from clone at ${CLONE_DIR}…"
   exec bash "$CLONE_DIR/install.sh" "$@"
