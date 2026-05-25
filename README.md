@@ -1,8 +1,8 @@
 # dotfiles
 
-Personal macOS bootstrap. Fresh machine → ready to code in ~20 minutes, mostly hands-off.
+Personal macOS bootstrap. Two self-contained scripts, no clone, nothing persistent on disk except shell config.
 
-## Use it
+## Install
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh)"
@@ -10,35 +10,44 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot
 
 What runs:
 
-1. Homebrew (also installs Xcode CLT)
-2. Everything in `Brewfile` — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, Claude Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
-3. `gh auth login` (browser device flow) + `gh-copilot` extension
-4. VS Code extensions from `vscode-extensions.txt`
-5. Sources `shell/functions.zsh` into `~/.zshrc` / `~/.bashrc` — adds `brew-purge <pkg>` (uninstall + autoremove orphans + sweep leftover config dirs in one shot)
+1. Homebrew (also installs Xcode CLT, which provides git)
+2. Brewfile bundle, inlined into the script via heredoc — CLIs (git, gh, mise, jq, rg, fzf) + apps (Raycast, 1Password, Dia, VS Code, Claude Code, CleanShot, iStat Menus, TablePlus, Displaperture) + fonts
+3. `gh auth login` (browser device flow) + `gh-copilot` extension (skipped if `gh copilot` is already a built-in)
+4. VS Code extensions
+5. Appends a `brew-purge <pkg>` function to `~/.zshrc` (uninstall + autoremove orphans + sweep leftover config dirs in one shot)
 
-Language runtimes (Node, Python, …) are handled per-repo with `mise` — drop a `.mise.toml` in each project. `scripts/setup-npmrc.sh` is left as a manual helper if you ever need a private npm registry.
+Language runtimes (Node, Python, …) are handled per-repo with `mise` — drop a `.mise.toml` in each project.
 
 Then finish the manual steps in [POST-INSTALL.md](./POST-INSTALL.md).
 
-## Undo it
-
-From inside the clone (`~/.dotfiles` by default):
+## Uninstall
 
 ```sh
-./uninstall.sh          # prompts before doing anything
-./uninstall.sh --yes    # skip the prompt
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/uninstall.sh)"
 ```
 
-Removes every Brewfile entry (casks via `--zap`, wiping app prefs), VS Code extensions, the `gh-copilot` extension, autoremoves orphaned brew dependencies, sweeps leftover config dirs under `$(brew --prefix)/etc` (so you don't have to `rm -rf /opt/homebrew/etc/openssl@3` and friends by hand), and strips the brew shellenv lines from `~/.zprofile` / `~/.bash_profile`. Leaves Homebrew, Xcode CLT, GitHub auth, and `~/.npmrc` alone — those have system-wide effects beyond this bootstrap; instructions to remove each are printed at the end.
+Same shape — one curl, no clone. Removes everything `install.sh` added (Brewfile entries with `--zap`, VS Code extensions, `gh-copilot` extension, brew shellenv lines, the `brew-purge` function block), autoremoves orphaned brew dependencies, and sweeps leftover config dirs under `$(brew --prefix)/etc`. Leaves Homebrew itself, Xcode CLT, GitHub auth, and `~/.npmrc` alone — those have system-wide effects beyond this bootstrap; instructions to remove each are printed at the end.
 
-## Refresh the snapshot
-
-After installing or removing apps:
+Pass `-- --yes` to skip the confirmation prompt:
 
 ```sh
-brew bundle dump --file=Brewfile --force --describe
-code --list-extensions > vscode-extensions.txt
-git commit -am "refresh snapshot"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/uninstall.sh)" -- --yes
+```
+
+## Edit it
+
+Everything lives in `install.sh` and `uninstall.sh` — the Brewfile is a heredoc inside step 2, the VS Code extensions are a `for` loop in step 4, the `brew-purge` function is a heredoc in step 6. Keep the lists in `install.sh` and `uninstall.sh` in sync (a quick `diff` shows the divergence).
+
+To regenerate the Brewfile contents from a fully-set-up machine and paste them into `install.sh`:
+
+```sh
+brew bundle dump --file=- --describe
+```
+
+For VS Code extensions:
+
+```sh
+code --list-extensions
 ```
 
 ## Security notes

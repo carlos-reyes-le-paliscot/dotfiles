@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Bootstrap a fresh macOS machine.
+# Bootstrap a fresh macOS machine. Single self-contained script — no clone,
+# no companion files, nothing persistent on disk except shell config.
+#
 # Usage (on a new Mac):
 #   bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/install.sh)"
 
 set -euo pipefail
-
-REPO_URL="${DOTFILES_REPO:-https://github.com/carlos-reyes-le-paliscot/dotfiles.git}"
-CLONE_DIR="${DOTFILES_DIR:-$HOME/.dotfiles}"
 
 # 1. Homebrew (also installs Xcode Command Line Tools, which provides git)
 if ! command -v brew >/dev/null 2>&1; then
@@ -23,7 +22,7 @@ else
 fi
 eval "$("$BREW_BIN" shellenv)"
 
-# Persist brew on PATH for future shells.
+# Persist brew on PATH for future login shells.
 BREW_SHELLENV_LINE="eval \"\$($BREW_BIN shellenv)\""
 for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
   if ! grep -qsF "$BREW_SHELLENV_LINE" "$profile"; then
@@ -32,44 +31,42 @@ for profile in "$HOME/.zprofile" "$HOME/.bash_profile"; do
   fi
 done
 
-# 2. If we were piped via curl|bash, BASH_SOURCE is empty and Brewfile isn't local.
-#    Clone (or pull) the repo and re-exec from inside it so we always run the
-#    latest version of every step, not whatever was on disk from a prior run.
-SCRIPT_PATH="${BASH_SOURCE[0]:-}"
-if [ -z "$SCRIPT_PATH" ] || [ ! -f "$(dirname "$SCRIPT_PATH")/Brewfile" ]; then
-  if [ ! -d "$CLONE_DIR/.git" ]; then
-    echo "→ Cloning $REPO_URL to ${CLONE_DIR}…"
-    git clone "$REPO_URL" "$CLONE_DIR"
-  else
-    local_before=$(git -C "$CLONE_DIR" rev-parse --short HEAD)
-    echo "→ Updating clone at ${CLONE_DIR} (was $local_before)…"
-    git -C "$CLONE_DIR" fetch --force --prune origin main
-    git -C "$CLONE_DIR" reset --hard origin/main
-    local_after=$(git -C "$CLONE_DIR" rev-parse --short HEAD)
-    if [ "$local_before" = "$local_after" ]; then
-      echo "→ Clone was already at latest ($local_after)."
-    else
-      echo "→ Clone updated: $local_before → $local_after."
-    fi
-  fi
-  echo "→ Re-running from clone at ${CLONE_DIR}…"
-  exec bash "$CLONE_DIR/install.sh" "$@"
-fi
-cd "$(dirname "$SCRIPT_PATH")"
-
-# 3. CLIs and apps from Brewfile
+# 2. Brewfile (piped to brew bundle via stdin)
 echo "→ Installing Brewfile bundle…"
-brew bundle --file=Brewfile --verbose
+brew bundle --file=- --verbose <<'BREWFILE'
+# --- CLIs ---
+brew "git"
+brew "gh"
+brew "mise"
+brew "jq"
+brew "ripgrep"
+brew "fzf"
 
-# 4. GitHub auth (browser device flow — no tokens in this repo)
+# --- Apps ---
+cask "raycast"
+cask "thebrowsercompany-dia"
+cask "1password"
+cask "1password-cli"
+cask "visual-studio-code"
+cask "claude-code"
+
+# Previously via Setapp — now standalone (separate licenses):
+cask "displaperture"
+cask "istat-menus"
+cask "cleanshot"
+cask "tableplus"
+
+# --- Fonts ---
+cask "font-jetbrains-mono-nerd-font"
+BREWFILE
+
+# 3. GitHub auth (browser device flow — no tokens in this repo)
 if ! gh auth status >/dev/null 2>&1; then
   echo "→ Signing in to GitHub…"
   gh auth login --web -h github.com
 fi
 
-# 5. gh extensions (Copilot CLI) — recent `gh` versions ship `copilot` as a
-#    built-in command, in which case the extension install errors out. Skip if
-#    `gh copilot` already works, and don't let a failed install kill the run.
+# 4. gh-copilot — skip if already a built-in/alias/extension.
 if gh copilot --help >/dev/null 2>&1 || gh extension list 2>/dev/null | grep -q gh-copilot; then
   : # already available
 else
@@ -77,24 +74,64 @@ else
   gh extension install github/gh-copilot || echo "⚠ gh-copilot install failed; continuing."
 fi
 
-# 6. VS Code extensions
+# 5. VS Code extensions
 if command -v code >/dev/null 2>&1; then
   echo "→ Installing VS Code extensions…"
-  xargs -n1 code --force --install-extension < vscode-extensions.txt || \
-    echo "⚠ One or more VS Code extensions failed to install (continuing)."
+  for ext in \
+    anthropic.claude-code \
+    dbaeumer.vscode-eslint \
+    esbenp.prettier-vscode \
+    Prisma.prisma \
+    bradlc.vscode-tailwindcss \
+    ms-azuretools.vscode-docker; do
+    code --force --install-extension "$ext" || echo "⚠ Failed: $ext (continuing)"
+  done
 else
   echo "⚠ VS Code 'code' CLI not on PATH. Open VS Code once, run 'Shell Command: Install code command in PATH', then re-run this script."
 fi
 
-# 7. Load shell helper functions (brew-purge, …) into interactive shells.
-FUNCTIONS_FILE="$(pwd)/shell/functions.zsh"
-SOURCE_LINE="[ -f \"$FUNCTIONS_FILE\" ] && source \"$FUNCTIONS_FILE\""
-for rc in "$HOME/.zshrc" "$HOME/.bashrc"; do
-  if ! grep -qsF "$FUNCTIONS_FILE" "$rc"; then
-    echo "$SOURCE_LINE" >> "$rc"
-    echo "→ Added shell function loader to ${rc/#$HOME/~}"
+# 6. Append brew-purge function directly to ~/.zshrc (idempotent via marker).
+BREW_PURGE_MARKER="# dotfiles:brew-purge"
+if ! grep -qsF "$BREW_PURGE_MARKER" "$HOME/.zshrc" 2>/dev/null; then
+  cat >> "$HOME/.zshrc" <<'ZSHRC'
+
+# dotfiles:brew-purge
+# Uninstall a brew formula and clean up what brew leaves behind:
+#   - autoremove orphaned deps
+#   - sweep $(brew --prefix)/etc/<name> dirs whose Cellar dir is gone
+# Usage: brew-purge node
+brew-purge() {
+  brew uninstall "$@" && brew autoremove
+  local P
+  P=$(brew --prefix)
+  local swept=""
+  local count=0
+  for d in "$P"/etc/*/; do
+    [ -d "$d" ] || continue
+    if [ ! -d "$P/Cellar/$(basename "$d")" ]; then
+      rm -rf "$d"
+      swept="$swept $(basename "$d")"
+      count=$((count + 1))
+    fi
+  done
+  if [ "$count" -gt 0 ]; then
+    echo
+    echo "→ brew-purge: removed $count leftover config dir(s) under $P/etc/:$swept"
+    echo "  (brew's earlier 'configuration files have not been removed' warnings are resolved.)"
+  else
+    echo
+    echo "→ brew-purge: no leftover config dirs to clean."
   fi
-done
+}
+ZSHRC
+  echo "→ Added brew-purge function to ~/.zshrc"
+fi
+
+# 7. Clean up legacy clone from earlier multi-file design, if present.
+if [ -d "$HOME/.dotfiles" ]; then
+  echo "→ Removing legacy clone at ~/.dotfiles (no longer needed)…"
+  rm -rf "$HOME/.dotfiles"
+fi
 
 cat <<'EOF'
 
@@ -102,13 +139,13 @@ cat <<'EOF'
 
 This terminal still has the OLD shell config loaded — Unix can't push env
 changes from a child process up into the parent shell. To pick up brew on
-PATH and the brew-purge helper in THIS terminal, run:
+PATH and brew-purge in THIS terminal, run:
 
     source ~/.zprofile && source ~/.zshrc
 
 Or just open a new terminal tab/window — new shells pick everything up
 automatically.
 
-Next, finish the manual steps in POST-INSTALL.md (1Password sign-in,
-Raycast import, VS Code Settings Sync, …).
+To uninstall everything later:
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/carlos-reyes-le-paliscot/dotfiles/main/uninstall.sh)"
 EOF

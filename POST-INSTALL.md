@@ -17,7 +17,7 @@ These can't be automated. Knock them out once and you're done.
 
 ## 4. VS Code
 - Open VS Code → sign in with your GitHub account.
-- Turn on **Settings Sync** (Command Palette → "Settings Sync: Turn On"). This auto-syncs settings, keybindings, and any extensions not already in `vscode-extensions.txt`.
+- Turn on **Settings Sync** (Command Palette → "Settings Sync: Turn On"). This auto-syncs settings, keybindings, and any extensions not already in `install.sh`.
 
 ## 5. GitHub
 - `gh auth status` to verify the bootstrap signed you in.
@@ -36,4 +36,4 @@ killall Dock
 ```
 
 ## 7. Private npm packages (only if you need them)
-The bootstrap doesn't install anything from npm anymore — language runtimes are handled per-repo via `mise`. If a project you work on pulls from a private npm registry, edit `scripts/setup-npmrc.sh`, uncomment one of the three patterns, and run it once: `./scripts/setup-npmrc.sh`.
+The bootstrap doesn't install anything from npm — language runtimes are handled per-repo via `mise`. If a project pulls from a private npm registry, set `~/.npmrc` manually (one of: `gh auth token` for GitHub Packages, `op read` for a 1Password-stored token, or a prompt). Never commit `~/.npmrc`.
