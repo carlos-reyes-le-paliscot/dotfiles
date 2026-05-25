@@ -8,7 +8,6 @@ brew "mise"
 brew "jq"
 brew "ripgrep"
 brew "fzf"
-brew "node"
 
 # --- Apps ---
 cask "raycast"
