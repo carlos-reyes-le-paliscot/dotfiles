@@ -10,8 +10,22 @@ brew-purge() {
   brew uninstall "$@" && brew autoremove
   local P
   P=$(brew --prefix)
+  local swept=""
+  local count=0
   for d in "$P"/etc/*/; do
     [ -d "$d" ] || continue
-    [ -d "$P/Cellar/$(basename "$d")" ] || rm -rf "$d"
+    if [ ! -d "$P/Cellar/$(basename "$d")" ]; then
+      rm -rf "$d"
+      swept="$swept $(basename "$d")"
+      count=$((count + 1))
+    fi
   done
+  if [ "$count" -gt 0 ]; then
+    echo
+    echo "→ brew-purge: removed $count leftover config dir(s) under $P/etc/:$swept"
+    echo "  (brew's earlier 'configuration files have not been removed' warnings are resolved.)"
+  else
+    echo
+    echo "→ brew-purge: no leftover config dirs to clean."
+  fi
 }
