@@ -73,7 +73,7 @@ fi
 # 6. VS Code extensions
 if command -v code >/dev/null 2>&1; then
   echo "→ Installing VS Code extensions…"
-  xargs -n1 code --install-extension --force < vscode-extensions.txt
+  xargs -n1 code --force --install-extension < vscode-extensions.txt
 else
   echo "⚠ VS Code 'code' CLI not on PATH. Open VS Code once, run 'Shell Command: Install code command in PATH', then re-run this script."
 fi
