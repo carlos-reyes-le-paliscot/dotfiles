@@ -60,10 +60,14 @@ if ! gh auth status >/dev/null 2>&1; then
   gh auth login --web -h github.com
 fi
 
-# 5. gh extensions (Copilot CLI)
-if ! gh extension list 2>/dev/null | grep -q gh-copilot; then
+# 5. gh extensions (Copilot CLI) — recent `gh` versions ship `copilot` as a
+#    built-in command, in which case the extension install errors out. Skip if
+#    `gh copilot` already works, and don't let a failed install kill the run.
+if gh copilot --help >/dev/null 2>&1 || gh extension list 2>/dev/null | grep -q gh-copilot; then
+  : # already available
+else
   echo "→ Installing gh-copilot extension…"
-  gh extension install github/gh-copilot
+  gh extension install github/gh-copilot || echo "⚠ gh-copilot install failed; continuing."
 fi
 
 # 6. VS Code extensions
