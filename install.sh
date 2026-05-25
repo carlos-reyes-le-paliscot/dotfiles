@@ -92,6 +92,15 @@ cat <<'EOF'
 
 ✓ Bootstrap complete.
 
+This terminal still has the OLD shell config loaded — Unix can't push env
+changes from a child process up into the parent shell. To pick up brew on
+PATH and the brew-purge helper in THIS terminal, run:
+
+    source ~/.zprofile && source ~/.zshrc
+
+Or just open a new terminal tab/window — new shells pick everything up
+automatically.
+
 Next, finish the manual steps in POST-INSTALL.md (1Password sign-in,
 Raycast import, VS Code Settings Sync, …).
 EOF
